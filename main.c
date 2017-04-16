@@ -1,3 +1,6 @@
+/*PWM Roubatel et Glassey*/
+
+
 #include <xc.h>
 #include "test.h"
 
@@ -24,8 +27,7 @@ typedef enum {
  * @return AVANT ou ARRIERE.
  */
 Direction conversionDirection(unsigned char v) {
-    // À implémenter.
-    return AVANT;
+    return (v > 127) ? AVANT : ARRIERE;
 }
 
 /**
@@ -34,8 +36,13 @@ Direction conversionDirection(unsigned char v) {
  * @return Cycle de travail du PWM.
  */
 unsigned char conversionMagnitude(unsigned char v) {
-    // À implémenter.
+    if(v < 127){
+        return (254-2*v);
+    }else if(v > 128){
+        return(2*v-256);
+    }else{
     return 0;
+    }
 }
 
 #ifndef TEST
@@ -44,7 +51,40 @@ unsigned char conversionMagnitude(unsigned char v) {
  * Initialise le hardware.
  */
 static void hardwareInitialise() {
-    // À implémenter.
+    
+    ANSELA = 0x00;
+    ANSELB = 0x00;
+    ANSELC = 0x00;
+    
+    TRISA = 0xFF;
+    TRISB = 0xFF;
+    TRISC = 0b11111000;
+
+    //Configurer l'entrée AN9 
+    ANSELBbits.ANSB3 = 1; // Pin 24 configurée en analog IN
+    ADCON0bits.CHS = 9; 
+    ADCON0bits.ADON = 1;
+    
+    
+    // Active le PWM sur CCP1:
+    CCP1CONbits.P1M = 0;
+    CCP1CONbits.CCP1M = 0b1100;
+    CCPTMRS0bits.C1TSEL = 0;  // Temporisateur 2
+    
+    T2CONbits.T2CKPS = 0;  //  Pas de diviseur de fréqu. pour timer 2
+    T2CONbits.TMR2ON = 1;  //  Active le timer 2
+    T2CONbits.T2OUTPS = 3; //  Divise la frequence des interruptions par 4
+    PR2 = 250;             //  Période du timer 2 réglée sur 63.
+        
+    PIE1bits.TMR2IE = 1; // Active les interruptions.
+    IPR1bits.TMR2IP = 1; // En haute priorité.
+    
+    INTCONbits.GIEH = 1;
+    INTCONbits.GIEL = 1;
+    RCONbits.IPEN = 1;
+    
+    
+    
 }
 
 /**
@@ -68,6 +108,8 @@ void low_priority interrupt interruptionsBassePriorite() {
  */
 void main(void) {
     hardwareInitialise();
+    
+    
 
     while(1);
 }
