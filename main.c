@@ -27,7 +27,7 @@ typedef enum {
  * @return AVANT ou ARRIERE.
  */
 Direction conversionDirection(unsigned char v) {
-    return (v > 127) ? AVANT : ARRIERE;
+    return (v > 127) ? AVANT : ARRIERE;          // Si la consigne est strictement plus grande que 127 on retourne avant, sinon arrière
 }
 
 /**
@@ -36,12 +36,12 @@ Direction conversionDirection(unsigned char v) {
  * @return Cycle de travail du PWM.
  */
 unsigned char conversionMagnitude(unsigned char v) {
-    if(v < 127){
-        return (254-2*v);
-    }else if(v > 128){
-        return(2*v-256);
+    if(v < 127){                    // Si la consigne est strictement plus petite que 127...
+        return (254-2*v);           // ... on retourne une valeur entre 0 et 254 
+    }else if(v > 128){              // Si la consigne est strictement plus petite que 128...
+        return(2*v-256);            // ... on retourne une valeur entre 0 et 254 
     }else{
-    return 0;
+    return 0;                       // si la consigne est égale à 127 ou 128, on retourne 0
     }
 }
 
@@ -52,36 +52,38 @@ unsigned char conversionMagnitude(unsigned char v) {
  */
 static void hardwareInitialise() {
     
-    ANSELA = 0x00;
-    ANSELB = 0x00;
-    ANSELC = 0x00;
+    ANSELA = 0x00;          // On désactive les entrées analogiques du port A
+    ANSELB = 0x00;          // On désactive les entrées analogiques du port B
+    ANSELC = 0x00;          // On désactive les entrées analogiques du port C
     
-    TRISA = 0xFF;
-    TRISB = 0xFF;
-    TRISC = 0b11111000;
+    TRISA = 0xFF;           // Port A configuré en entrée
+    TRISB = 0xFF;           // Port B configuré en entrée
+    TRISC = 0b11111000;     // Port C 8-4 configurés en entrées et 3-0 en sorties
 
     //Configurer l'entrée AN9 
-    ANSELBbits.ANSB3 = 1; // Pin 24 configurée en analog IN
-    ADCON0bits.CHS = 9; 
-    ADCON0bits.ADON = 1;
+    ANSELBbits.ANSB3 = 1; // Entrée 3 configurée en analog IN
+    ADCON0bits.CHS = 9; // Acquisition sur l'entré AN9
+    ADCON0bits.ADON = 1; // Convertissuer A/D activé
+    ADCON2bits.ADCS = 0; // Source FOSC/4 et TAD de 4/FOSC => 4us NEW
+    ADCON2bits.ACQT = 0; // La conversion démarre tout de suite NEW
     
     
     // Active le PWM sur CCP1:
-    CCP1CONbits.P1M = 0;
-    CCP1CONbits.CCP1M = 0b1100;
-    CCPTMRS0bits.C1TSEL = 0;  // Temporisateur 2
+    CCP1CONbits.P1M = 0; // Utilisation de la sortie P1A uniquement : PWM simple
+    CCP1CONbits.CCP1M = 12; // La sortie A est active au niveau haut NEW val 12 avant 0b1100
+    CCPTMRS0bits.C1TSEL = 0;  // Le PWM utilise le temporisateur 2
     
     T2CONbits.T2CKPS = 0;  //  Pas de diviseur de fréqu. pour timer 2
     T2CONbits.TMR2ON = 1;  //  Active le timer 2
     T2CONbits.T2OUTPS = 3; //  Divise la frequence des interruptions par 4
-    PR2 = 250;             //  Période du timer 2 réglée sur 63.
+    PR2 = 250;             //  Période du timer 2 réglée sur pour avoir une période de 10 ms.
         
     PIE1bits.TMR2IE = 1; // Active les interruptions.
     IPR1bits.TMR2IP = 1; // En haute priorité.
     
-    INTCONbits.GIEH = 1;
-    INTCONbits.GIEL = 1;
-    RCONbits.IPEN = 1;
+    INTCONbits.GIEH = 1;    // Activation des interruptions de haute priorité
+    INTCONbits.GIEL = 1;    // Activation des interruptions de basse priorité
+    RCONbits.IPEN = 1;      // Activation des niveaux de priorités des interruptions
     
     
     
